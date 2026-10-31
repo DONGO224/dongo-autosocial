@@ -1,84 +1,116 @@
-from datetime import datetime, timezone
+
 import json
 import os
-from pathlib import Path
+import urllib.request
+import urllib.error
+from datetime import datetime
 
-PROJECT_NAME = "DONGO AutoSocial"
-BRAND_NAME = "DONGO INNOVATION"
+BRAND = "DONGO INNOVATION"
+SLOGAN = "Quand la créativité rencontre l'intelligence"
 
-DATA_DIR = Path("data")
-HISTORY_FILE = DATA_DIR / "history.json"
+def generate_publication():
+    api_key = os.getenv("GEMINI_API_KEY")
 
+    if not api_key:
+        raise RuntimeError("Secret GEMINI_API_KEY introuvable.")
 
-def load_history():
-    """Charge l'historique des publications."""
-    if not HISTORY_FILE.exists():
-        return []
+    model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+
+    prompt = f"""
+Tu es le responsable marketing de {BRAND},
+une entreprise camerounaise spécialisée dans
+l'infographie, l'intelligence artificielle,
+la formation et le marketing digital.
+
+Slogan : {SLOGAN}
+
+Date : {datetime.now().strftime("%Y-%m-%d")}
+
+Crée une publication Facebook originale en français.
+
+Thèmes possibles :
+- Intelligence artificielle
+- Infographie et design
+- Marketing digital
+- Technologies
+- Entrepreneuriat
+- Services de DONGO INNOVATION
+
+La publication doit contenir :
+1. Un titre accrocheur.
+2. Un texte intéressant et utile.
+3. Un appel à l'action.
+4. Trois à cinq hashtags pertinents.
+
+Sois naturel, professionnel et accessible.
+N'invente pas de témoignages, de clients ou de résultats.
+Retourne uniquement le texte de la publication.
+"""
+
+    url = (
+        "https://generativelanguage.googleapis.com/"
+        f"v1beta/models/{model}:generateContent"
+    )
+
+    payload = {
+        "contents": [
+            {
+                "parts": [
+                    {"text": prompt}
+                ]
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0.8,
+            "maxOutputTokens": 800
+        }
+    }
+
+    request = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "x-goog-api-key": api_key
+        },
+        method="POST"
+    )
 
     try:
-        with HISTORY_FILE.open("r", encoding="utf-8") as file:
-            return json.load(file)
-    except (json.JSONDecodeError, OSError):
-        return []
+        with urllib.request.urlopen(request, timeout=60) as response:
+            result = json.loads(response.read().decode("utf-8"))
 
+        publication = result["candidates"][0]["content"]["parts"][0]["text"]
 
-def save_history(history):
-    """Enregistre l'historique des publications."""
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
+        return publication.strip()
 
-    with HISTORY_FILE.open("w", encoding="utf-8") as file:
-        json.dump(history, file, ensure_ascii=False, indent=2)
+    except urllib.error.HTTPError as error:
+        details = error.read().decode("utf-8", errors="replace")
+        raise RuntimeError(
+            f"Erreur Gemini HTTP {error.code}: {details[:1500]}"
+        ) from error
 
-
-def create_daily_idea():
-    """Choisit un thème de publication selon le jour."""
-    themes = {
-        0: "Intelligence artificielle",
-        1: "Infographie et design",
-        2: "Marketing digital",
-        3: "Technologies et astuces numériques",
-        4: "Présentation des services DONGO INNOVATION",
-        5: "Entrepreneuriat",
-        6: "Communauté et échanges",
-    }
-
-    today = datetime.now().weekday()
-
-    return {
-        "date": datetime.now().astimezone().strftime("%Y-%m-%d"),
-        "theme": themes[today],
-        "brand": BRAND_NAME,
-        "slogan": "Quand la créativité rencontre l'intelligence",
-    }
+    except (KeyError, IndexError, TypeError) as error:
+        raise RuntimeError(
+            "Gemini a répondu, mais aucun texte exploitable n'a été trouvé."
+        ) from error
 
 
 def main():
-    print("=" * 45)
-    print(PROJECT_NAME)
-    print(BRAND_NAME)
-    print("=" * 45)
+    print("=" * 50)
+    print("DONGO AUTOSOCIAL")
+    print(BRAND)
+    print("=" * 50)
 
-    idea = create_daily_idea()
+    publication = generate_publication()
 
-    history = load_history()
+    print("\nPUBLICATION GÉNÉRÉE PAR GEMINI\n")
+    print(publication)
 
-    already_exists = any(
-        item.get("date") == idea["date"]
-        for item in history
-    )
-
-    if already_exists:
-        print("Une entrée existe déjà pour aujourd'hui.")
-    else:
-        history.append(idea)
-        save_history(history)
-        print("Nouvelle idée enregistrée.")
-
-    print("\nThème du jour :", idea["theme"])
-    print("Slogan :", idea["slogan"])
-    print("Date :", idea["date"])
-    print("\nÉtat : programme de base exécuté.")
+    print("\n" + "=" * 50)
+    print("TEST REUSSI : GEMINI EST CONNECTE.")
     print("Aucune publication Facebook n'a été envoyée.")
+    print("=" * 50)
 
 
 if __name__ == "__main__":
