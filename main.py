@@ -62,7 +62,7 @@ Retourne uniquement le texte de la publication.
         ],
         "generationConfig": {
             "temperature": 0.8,
-            "maxOutputTokens": 800
+            "maxOutputTokens": 500
         }
     }
 
@@ -77,7 +77,7 @@ Retourne uniquement le texte de la publication.
     )
 
     try:
-        with urllib.request.urlopen(request, timeout=60) as response:
+         with urllib.request.urlopen(request, timeout=180) as response:
             result = json.loads(response.read().decode("utf-8"))
 
         publication = result["candidates"][0]["content"]["parts"][0]["text"]
