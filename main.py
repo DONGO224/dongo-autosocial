@@ -5,8 +5,10 @@ import urllib.request
 import urllib.error
 from datetime import datetime
 
+
 BRAND = "DONGO INNOVATION"
 SLOGAN = "Quand la créativité rencontre l'intelligence"
+
 
 def generate_publication():
     api_key = os.getenv("GEMINI_API_KEY")
@@ -14,37 +16,35 @@ def generate_publication():
     if not api_key:
         raise RuntimeError("Secret GEMINI_API_KEY introuvable.")
 
-    model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+    model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
     prompt = f"""
-Tu es le responsable marketing de {BRAND},
-une entreprise camerounaise spécialisée dans
-l'infographie, l'intelligence artificielle,
-la formation et le marketing digital.
+Tu es le responsable marketing de {BRAND}.
 
-Slogan : {SLOGAN}
+Notre slogan : {SLOGAN}
 
 Date : {datetime.now().strftime("%Y-%m-%d")}
 
+Notre activité :
+- Infographie et design graphique
+- Intelligence artificielle
+- Formation numérique
+- Montage photo et vidéo
+- Marketing digital
+
 Crée une publication Facebook originale en français.
 
-Thèmes possibles :
-- Intelligence artificielle
-- Infographie et design
-- Marketing digital
-- Technologies
-- Entrepreneuriat
-- Services de DONGO INNOVATION
+Choisis un sujet intéressant parmi nos activités.
 
 La publication doit contenir :
 1. Un titre accrocheur.
-2. Un texte intéressant et utile.
+2. Un texte utile et intéressant.
 3. Un appel à l'action.
-4. Trois à cinq hashtags pertinents.
+4. Trois à cinq hashtags.
 
-Sois naturel, professionnel et accessible.
-N'invente pas de témoignages, de clients ou de résultats.
-Retourne uniquement le texte de la publication.
+Adopte un ton professionnel, naturel et accessible.
+Ne fabrique pas de témoignages ou de résultats.
+Retourne uniquement la publication.
 """
 
     url = (
@@ -61,7 +61,7 @@ Retourne uniquement le texte de la publication.
             }
         ],
         "generationConfig": {
-            "temperature": 0.8,
+            "temperature": 0.7,
             "maxOutputTokens": 500
         }
     }
@@ -77,22 +77,28 @@ Retourne uniquement le texte de la publication.
     )
 
     try:
-         with urllib.request.urlopen(request, timeout=180) as response:
-            result = json.loads(response.read().decode("utf-8"))
+        with urllib.request.urlopen(request, timeout=180) as response:
+            result = json.loads(
+                response.read().decode("utf-8")
+            )
 
-        publication = result["candidates"][0]["content"]["parts"][0]["text"]
+        publication = (
+            result["candidates"][0]["content"]["parts"][0]["text"]
+        )
 
         return publication.strip()
 
     except urllib.error.HTTPError as error:
-        details = error.read().decode("utf-8", errors="replace")
+        details = error.read().decode(
+            "utf-8", errors="replace"
+        )
         raise RuntimeError(
             f"Erreur Gemini HTTP {error.code}: {details[:1500]}"
         ) from error
 
     except (KeyError, IndexError, TypeError) as error:
         raise RuntimeError(
-            "Gemini a répondu, mais aucun texte exploitable n'a été trouvé."
+            "Gemini a répondu sans fournir de texte exploitable."
         ) from error
 
 
@@ -104,12 +110,12 @@ def main():
 
     publication = generate_publication()
 
-    print("\nPUBLICATION GÉNÉRÉE PAR GEMINI\n")
+    print("\nPUBLICATION GENEREE PAR GEMINI\n")
     print(publication)
 
     print("\n" + "=" * 50)
     print("TEST REUSSI : GEMINI EST CONNECTE.")
-    print("Aucune publication Facebook n'a été envoyée.")
+    print("Aucune publication Facebook n'a ete envoyee.")
     print("=" * 50)
 
 
