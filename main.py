@@ -16,8 +16,7 @@ def generate_publication():
     if not api_key:
         raise RuntimeError("Secret GEMINI_API_KEY introuvable.")
 
-    model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-
+    model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
     prompt = f"""
 Tu es le responsable marketing de {BRAND}.
 
